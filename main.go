@@ -70,17 +70,18 @@ func handleTunneling(w http.ResponseWriter, r *http.Request) {
 	defer destConn.Close()
 
 	w.WriteHeader(http.StatusOK)
-
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
 		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
 		return
 	}
+
 	clientConn, _, err := hijacker.Hijack()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+
 	defer clientConn.Close()
 
 	wg := sync.WaitGroup{}
@@ -88,6 +89,7 @@ func handleTunneling(w http.ResponseWriter, r *http.Request) {
 	go transfer(destConn, clientConn, &wg)
 	go transfer(clientConn, destConn, &wg)
 	wg.Wait()
+
 }
 
 func isRedditURL(url string) bool {
@@ -110,7 +112,6 @@ func transfer(dst io.WriteCloser, src io.ReadCloser, wg *sync.WaitGroup) {
 }
 
 // middleware
-
 func authenticate(handler http.Handler, username, password string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Proxy-Authorization")
